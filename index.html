@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Gastos">
+  <title>Gastos Semanales</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f2f2f7; color: #1c1c1e; min-height: 100vh; }
+    .app { max-width: 430px; margin: 0 auto; padding-bottom: 3rem; }
+    .header { background: #fff; border-bottom: 0.5px solid #e5e5ea; padding: 1rem 1.25rem 0.75rem; position: sticky; top: 0; z-index: 10; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .week-nav { display: flex; align-items: center; gap: 8px; }
+    .week-nav button { background: none; border: none; cursor: pointer; color: #8e8e93; font-size: 22px; padding: 4px; line-height: 1; }
+    .week-label { font-size: 15px; font-weight: 600; color: #1c1c1e; }
+    .total-badge { background: #d1fae5; color: #065f46; font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 20px; }
+    .summary-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 0.5rem; }
+    .summary-card { background: #f2f2f7; border-radius: 10px; padding: 8px 12px; }
+    .s-label { font-size: 11px; color: #8e8e93; margin-bottom: 2px; }
+    .s-val { font-size: 17px; font-weight: 600; color: #1c1c1e; }
+    .content { padding: 1rem; }
+    .section-title { font-size: 12px; font-weight: 600; color: #8e8e93; letter-spacing: 0.05em; text-transform: uppercase; margin: 1rem 0 0.5rem; }
+    .cat-list { display: flex; flex-direction: column; gap: 8px; }
+    .cat-card { background: #fff; border: 0.5px solid #e5e5ea; border-radius: 14px; padding: 13px 14px; cursor: pointer; transition: background 0.1s; }
+    .cat-card:active { background: #f2f2f7; }
+    .cat-header { display: flex; align-items: center; gap: 10px; }
+    .cat-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .cat-info { flex: 1; }
+    .cat-name { font-size: 15px; font-weight: 500; color: #1c1c1e; }
+    .cat-sub { font-size: 12px; color: #8e8e93; margin-top: 1px; }
+    .cat-amount { font-size: 16px; font-weight: 600; color: #1c1c1e; }
+    .cat-bar-wrap { margin-top: 9px; height: 3px; background: #e5e5ea; border-radius: 2px; overflow: hidden; }
+    .cat-bar { height: 100%; border-radius: 2px; transition: width 0.3s; }
+    .add-btn { width: 100%; margin: 1rem 0 0; padding: 13px; border-radius: 14px; background: #fff; border: 0.5px dashed #c7c7cc; color: #8e8e93; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: flex-end; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #fff; border-radius: 20px 20px 0 0; padding: 1.25rem 1.25rem 2.5rem; width: 100%; max-width: 430px; }
+    .modal-handle { width: 36px; height: 4px; background: #e5e5ea; border-radius: 2px; margin: 0 auto 1rem; }
+    .modal-title { font-size: 17px; font-weight: 600; margin-bottom: 1rem; color: #1c1c1e; }
+    .modal-cats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1rem; }
+    .mcat { border: 0.5px solid #e5e5ea; border-radius: 12px; padding: 10px; text-align: center; cursor: pointer; background: #fff; transition: border-color 0.15s; }
+    .mcat.selected { border: 2px solid #059669; background: #f0fdf4; }
+    .mcat-icon { font-size: 24px; margin-bottom: 4px; }
+    .mcat-name { font-size: 11px; color: #6b7280; font-weight: 500; }
+    .modal-label { font-size: 13px; color: #8e8e93; margin-bottom: 6px; font-weight: 500; }
+    .modal-input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 0.5px solid #e5e5ea; font-size: 17px; background: #f2f2f7; color: #1c1c1e; margin-bottom: 1rem; outline: none; }
+    .modal-input:focus { border-color: #059669; background: #fff; }
+    .modal-desc { width: 100%; padding: 12px 14px; border-radius: 12px; border: 0.5px solid #e5e5ea; font-size: 15px; background: #f2f2f7; color: #1c1c1e; margin-bottom: 1rem; resize: none; outline: none; font-family: inherit; }
+    .modal-desc:focus { border-color: #059669; background: #fff; }
+    .modal-confirm { width: 100%; padding: 14px; border-radius: 14px; background: #059669; border: none; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; }
+    .modal-cancel { width: 100%; padding: 12px; border: none; background: none; color: #8e8e93; font-size: 15px; cursor: pointer; margin-top: 6px; }
+    .entries-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .entry-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f2f2f7; border-radius: 10px; }
+    .entry-desc { font-size: 14px; color: #1c1c1e; font-weight: 500; }
+    .entry-date { font-size: 11px; color: #8e8e93; margin-top: 1px; }
+    .entry-amt { font-size: 14px; font-weight: 600; color: #1c1c1e; }
+    .entry-del { background: none; border: none; color: #ff3b30; cursor: pointer; font-size: 18px; padding: 0 0 0 10px; }
+    .no-entries { font-size: 13px; color: #8e8e93; text-align: center; padding: 1rem 0; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <div class="week-nav">
+        <button onclick="changeWeek(-1)">‹</button>
+        <span class="week-label" id="week-label"></span>
+        <button onclick="changeWeek(1)">›</button>
+      </div>
+      <span class="total-badge" id="total-badge">€0.00</span>
+    </div>
+    <div class="summary-row">
+      <div class="summary-card"><div class="s-label">Esta semana</div><div class="s-val" id="week-total">€0.00</div></div>
+      <div class="summary-card"><div class="s-label">Promedio diario</div><div class="s-val" id="daily-avg">€0.00</div></div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="section-title">Categorías</div>
+    <div class="cat-list" id="cat-list"></div>
+    <button class="add-btn" onclick="openModal()">＋ Añadir gasto</button>
+    <div id="entries-section"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal" onclick="closeIfOutside(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nuevo gasto</div>
+    <div class="modal-cats" id="modal-cats"></div>
+    <div class="modal-label">Importe (€)</div>
+    <input class="modal-input" type="number" id="amount-input" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
+    <div class="modal-label">Descripción (opcional)</div>
+    <textarea class="modal-desc" id="desc-input" rows="2" placeholder="Ej: Pollo, pasta, zumo..."></textarea>
+    <button class="modal-confirm" onclick="addEntry()">Guardar gasto</button>
+    <button class="modal-cancel" onclick="closeModal()">Cancelar</button>
+  </div>
+</div>
+
+<script>
+const CATS=[
+  {id:'meat',name:'Carne / Pescado',icon:'🥩',color:'#fee2e2',bar:'#ef4444'},
+  {id:'carbs',name:'Carbohidratos',icon:'🍞',color:'#fef3c7',bar:'#f59e0b'},
+  {id:'veg',name:'Verduras',icon:'🥦',color:'#d1fae5',bar:'#10b981'},
+  {id:'drinks',name:'Bebidas',icon:'🥤',color:'#dbeafe',bar:'#3b82f6'},
+  {id:'snacks',name:'Snacks',icon:'🍫',color:'#ede9fe',bar:'#7c3aed'},
+  {id:'other',name:'Otros',icon:'🛒',color:'#f3f4f6',bar:'#6b7280'},
+];
+let currentWeek=0,selectedCat=null,openCat=null;
+let data=JSON.parse(localStorage.getItem('gastos_v1')||'{}');
+
+function getWeekKey(o){
+  const n=new Date(),day=n.getDay()||7,m=new Date(n);
+  m.setDate(n.getDate()-day+1+o*7);
+  return `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,'0')}-${String(m.getDate()).padStart(2,'0')}`;
+}
+function getWeekDates(o){
+  const n=new Date(),day=n.getDay()||7,m=new Date(n);
+  m.setDate(n.getDate()-day+1+o*7);
+  const s=new Date(m);s.setDate(m.getDate()+6);
+  const f=d=>`${d.getDate()}/${d.getMonth()+1}`;
+  return `${f(m)} – ${f(s)}`;
+}
+function save(){localStorage.setItem('gastos_v1',JSON.stringify(data));}
+function getEntries(){return data[getWeekKey(currentWeek)]||[];}
+function catTotal(id){return getEntries().filter(e=>e.cat===id).reduce((s,e)=>s+e.amt,0);}
+function weekTotal(){return getEntries().reduce((s,e)=>s+e.amt,0);}
+
+function render(){
+  document.getElementById('week-label').textContent=getWeekDates(currentWeek);
+  const t=weekTotal();
+  document.getElementById('total-badge').textContent=`€${t.toFixed(2)}`;
+  document.getElementById('week-total').textContent=`€${t.toFixed(2)}`;
+  document.getElementById('daily-avg').textContent=`€${(t/7).toFixed(2)}`;
+  const max=Math.max(...CATS.map(c=>catTotal(c.id)),1);
+  const cl=document.getElementById('cat-list');cl.innerHTML='';
+  CATS.forEach(cat=>{
+    const tot=catTotal(cat.id),pct=Math.round(tot/max*100);
+    const entries=getEntries().filter(e=>e.cat===cat.id);
+    const d=document.createElement('div');d.className='cat-card';
+    d.innerHTML=`<div class="cat-header">
+      <div class="cat-icon" style="background:${cat.color}">${cat.icon}</div>
+      <div class="cat-info"><div class="cat-name">${cat.name}</div><div class="cat-sub">${entries.length} gasto${entries.length!==1?'s':''}</div></div>
+      <div class="cat-amount">€${tot.toFixed(2)}</div>
+    </div>${tot>0?`<div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%;background:${cat.bar}"></div></div>`:''}`;
+    d.onclick=()=>{openCat=openCat===cat.id?null:cat.id;renderEntries();};
+    cl.appendChild(d);
+  });
+  renderEntries();
+}
+
+function renderEntries(){
+  const sec=document.getElementById('entries-section');
+  if(!openCat){sec.innerHTML='';return;}
+  const cat=CATS.find(c=>c.id===openCat);
+  const entries=getEntries().filter(e=>e.cat===openCat);
+  sec.innerHTML=`<div class="section-title" style="margin-top:1.25rem">${cat.icon} ${cat.name}</div>`;
+  if(!entries.length){sec.innerHTML+=`<p class="no-entries">Sin gastos esta semana</p>`;return;}
+  const list=document.createElement('div');list.className='entries-list';
+  entries.forEach(e=>{
+    const row=document.createElement('div');row.className='entry-row';
+    row.innerHTML=`<div><div class="entry-desc">${e.desc||cat.name}</div><div class="entry-date">${e.date}</div></div>
+    <div style="display:flex;align-items:center"><span class="entry-amt">€${e.amt.toFixed(2)}</span>
+    <button class="entry-del" onclick="deleteEntry('${e.id}')">🗑</button></div>`;
+    list.appendChild(row);
+  });
+  sec.appendChild(list);
+}
+
+function changeWeek(d){currentWeek+=d;render();}
+
+function openModal(){
+  selectedCat=null;
+  document.getElementById('amount-input').value='';
+  document.getElementById('desc-input').value='';
+  renderModalCats();
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+function closeIfOutside(e){if(e.target.id==='modal')closeModal();}
+
+function renderModalCats(){
+  const w=document.getElementById('modal-cats');w.innerHTML='';
+  CATS.forEach(cat=>{
+    const d=document.createElement('div');
+    d.className='mcat'+(selectedCat===cat.id?' selected':'');
+    d.innerHTML=`<div class="mcat-icon">${cat.icon}</div><div class="mcat-name">${cat.name}</div>`;
+    d.onclick=()=>{selectedCat=cat.id;renderModalCats();};
+    w.appendChild(d);
+  });
+}
+
+function addEntry(){
+  if(!selectedCat){alert('Selecciona una categoría');return;}
+  const amt=parseFloat(document.getElementById('amount-input').value);
+  if(!amt||amt<=0){alert('Introduce un importe válido');return;}
+  const desc=document.getElementById('desc-input').value.trim();
+  const key=getWeekKey(currentWeek);
+  if(!data[key])data[key]=[];
+  const now=new Date();
+  data[key].push({id:Date.now().toString(),cat:selectedCat,amt,desc,date:`${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`});
+  save();closeModal();render();
+}
+
+function deleteEntry(id){
+  const key=getWeekKey(currentWeek);
+  if(!data[key])return;
+  data[key]=data[key].filter(e=>e.id!==id);
+  save();render();renderEntries();
+}
+
+render();
+</script>
+</body>
+</html>
